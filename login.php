@@ -1,87 +1,61 @@
 <?php
 session_start();
 
-require_once "banco/cadastro.php";
-
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    require_once "banco/cadastro.php";
+
     $nome = $_POST['nome'];
     $senha = $_POST['senha'];
 
-    $sql = "SELECT * FROM cadastro WHERE nome = ? AND senha = ?";
-
+    $sql = "SELECT id, nome, senha FROM cadastro WHERE nome = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $nome, $senha);
+    $stmt->bind_param("s", $nome);
     $stmt->execute();
+    $result = $stmt->get_result();
 
-    $resultado = $stmt->get_result();
-
-    if ($resultado->num_rows === 1) {
-        $row = $resultado->fetch_assoc();
+    if ($result->num_rows === 1) {
+        $row = $result->fetch_assoc();
 
         if (password_verify($senha, $row['senha'])) {
             $_SESSION["loggedin"] = true;
-            $_SESSION["nomeUsuario"] = $row['nome']; // Adiciona o nome do usuário à sessão
+            $_SESSION["id"] = $row['id'];
+            $_SESSION["username"] = $row['nome'];
 
             header("Location: index.php");
             exit;
+        } else {
+            $error = "Senha incorreta";
         }
     } else {
-        $error = "Usuário ou senha incorreto!";
+        $error = "Nome de usuário não encontrado";
     }
+
+    $stmt->close();
+    $conn->close();
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="pt-br">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Quadro de Itens</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>login do Usuário</title>
+    <link rel="stylesheet" href="login.css">
 <body>
-    <nav class="navbar navbar-expand-lg bg-body-tertiary">
-        <!-- ... (seu código de navegação) ... -->
-    </nav>
-
-    <div class="container">
-        <div class="row">
-            <div class="col mt-5">
-                <?php
-                // ... (seu código de inclusão de páginas) ...
-                ?>
-
-                <?php
-                if (@$_REQUEST["page"] == "index" || empty(@$_REQUEST["page"])) {
-                ?>
-                    <h2>Grafico Geral</h2>
-                    <!-- Seção de gráfico -->
-                    <canvas id="graficoBarras" width="1000" height="300"></canvas>
-
-                    <div>
-                        <?php
-                        if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
-                            echo "<p>Bem-vindo, " . $_SESSION["nomeUsuario"] . "!</p>";
-                        }
-                        ?>
-                    </div>
-
-                    <script>
-                        var ctx = document.getElementById('graficoBarras').getContext('2d');
-
-                        var myChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: <?php echo json_encode($dadosGrafico); ?>,
-                            options: {
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    </script>
-               
+<h1>login do Usuário</h1>
+    <form action="index.php" method="post">
+        <input type="hidden" name="id" value="salvar">
+        <div>
+            <label>Nome</label>
+            <input type="text" name="nome" placeholder="Digite o seu nome" required>
+        </div>
+        <div>
+            <label>Senha</label>
+            <input type="password" name="senha" placeholder="Digite a sua senha" required>
+        </div>
+        <input type="submit" value="Logar">
+    </form>
+   
+    <br>
+    <a href="cadastro_usuario.php">Cadastrar novo usuário?</a>
+</body>
+</html>
